@@ -5,11 +5,30 @@ import urllib2
 import re
 from platform import python_version
 
+class HtmlTools:
+    BgnCharToNoneRex = re.compile(r'(\t|\n| |<a.*?>|<img.*?>)')
+    EndCharToNoneRex = re.compile(r'<.*?>')
+    BgnPartRex = re.compile(r'<p.*?>')
+    CharToNewLineRex = re.compile(r'(<br/>|</p>|<tr>|</?div>)')
+    CharToNextTabRex = re.compile(r'<td>')
+    ReplaceTable = [
+        ('&','\"'),
+        ]
+    def ReplaceChar(self,x):
+        x = self.BgnCharToNoneRex.sub('',x)
+        x = self.EndCharToNoneRex.sub('',x)
+        x = self.BgnPartRex.sub('\n',x)
+        x = self.CharToNewLineRex.sub('\n',x)
+        x = self.CharToNextTabRex.sub('\t',x)
+        for tab in self.ReplaceTable:
+            x = x.replace(tab[0],tab[1])
+        return x
 class QiuBai:
     def __init__(self):
         self.page = 1
         self.pages = []
         self.url = 'http://www.qiushibaike.com/8hr/page'
+        self.HtmlTool = HtmlTools()
     def GetPage(self,PageNum):
         myUrl = self.url + '/' + PageNum
         myUrlReq = urllib2.Request(myUrl)
@@ -35,8 +54,9 @@ class QiuBai:
             page = self.GetPage(str(self.page))
             items = self.GetItems(page)
             for item in items:
-                print u'第%d页: ' % self.page ,
-                print item[0],item[1]
+                print u'第%d页: ' % self.page,
+                print item[0]
+                print self.HtmlTool.ReplaceChar(item[1])
                 usrInput = raw_input()
                 if usrInput == 'exit':
                     print 'Exit the program'
