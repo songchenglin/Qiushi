@@ -12,13 +12,16 @@ class QiuBai:
         self.url = 'http://www.qiushibaike.com/8hr/page'
     def GetPage(self,PageNum):
         myUrl = self.url + '/' + PageNum
-        myResp = urllib2.urlopen(myUrl)
-        if myResp == None:
+        myUrlReq = urllib2.Request(myUrl)
+        myUrlReq.add_header('User-Agent','Mozilla/4.0')
+        try:
+            myResp = urllib2.urlopen(myUrlReq)
+            myPage = myResp.read()
+            myResp.close()
+            return myPage
+        except:
             print 'Can\'t connect to %s' % myUrl
             return None
-        myPage = myResp.read()
-        myResp.close()
-        return myPage
     def GetItems(self,page):
         unicodePage = page.decode('utf-8')
         reObj = re.compile(r'<div.*?class="content".*?title="(.*?)">(.*?)</div>',re.S)
