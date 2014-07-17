@@ -3,7 +3,14 @@
 import urllib
 import urllib2
 import re
+import os
+from PIL import Image
 from platform import python_version
+
+def ShowImages(path):
+    if os.path.isfile(path):
+        im = Image.open(path)
+        im.show()
 
 class HtmlTools:
     BgnCharToNoneRex = re.compile(r'(\t|\n| |<a.*?>|<img.*?>)')
@@ -29,6 +36,10 @@ class QiuBai:
         self.pages = []
         self.url = 'http://www.qiushibaike.com/8hr/page'
         self.HtmlTool = HtmlTools()
+        self.cache_path = os.path.join(os.getcwd(), 'Cache')
+        #print self.cache_path
+        if not os.path.isdir(self.cache_path):
+            os.makedirs(self.cache_path)
     def GetPage(self,PageNum):
         myUrl = self.url + '/' + PageNum
         myUrlReq = urllib2.Request(myUrl)
@@ -45,22 +56,54 @@ class QiuBai:
         unicodePage = page.decode('utf-8')
         reObj = re.compile(r'<div.*?class="content".*?title="(.*?)">(.*?)</div>',re.S)
         myItems = reObj.findall(unicodePage)
-        return myItems
         #self.pages.append(myItems)
         #for item in myItems:
-        #    print item[0],item[1]
+        #    print item[0],item[1],item[2]
+        return myItems
+    def DownloadImages(self, page, items):
+        print u'加载中.........'
+        unicodePage = page.decode('utf-8')
+        for item in items:
+            imgFile = os.path.join(self.cache_path, item[0].replace(':', '-')+'.jpg')
+            #print imgFile
+            reStr = r'<div class="content" title="%s">.{0,150}</div>\s*<div class="thumb">.*?<img src="(.*?)"' % item[0]
+            reResult = re.search(reStr, unicodePage, re.S)
+            if reResult is None:
+                continue
+            imgUrl = reResult.group(1)
+            #print imgUrl
+            #continue
+            myUrlReq = urllib2.Request(imgUrl)
+            myUrlReq.add_header('User-Agent','Mozilla/4.0')
+            try:
+                myResp = urllib2.urlopen(myUrlReq)
+                imgData = myResp.read()
+                fd = open(imgFile,'wb')
+                fd.write(imgData)
+                fd.close()
+                myResp.close()
+            except:
+                print 'Download %s failed.' % imgUrl
+                pass
     def startQiuBai(self):
         while 1:
             page = self.GetPage(str(self.page))
             items = self.GetItems(page)
+            self.DownloadImages(page,items)
             for item in items:
+                imgFile = os.path.join(self.cache_path, item[0].replace(':', '-')+'.jpg')
                 print u'第%d页: ' % self.page,
-                print item[0]
+                if os.path.isfile(imgFile):
+                    print item[0], u' 亲，这条段子有图片，输入任意字符来显示'
+                else:
+                    print item[0]
                 print self.HtmlTool.ReplaceChar(item[1])
                 usrInput = raw_input()
                 if usrInput == 'exit':
                     print 'Exit the program'
                     return None
+                elif usrInput is not '':
+                    ShowImages(imgFile)
             self.page += 1
         
 __author__ = 'SongChenglin'
